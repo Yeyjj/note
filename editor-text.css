@@ -1,0 +1,176 @@
+/* 富文本编辑器 & 预览一致性 */
+#textEditor {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header 正常占位，平滑收缩 */
+#textEditor .screen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 8px;
+  flex-shrink: 0;
+  z-index: 10;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: padding .32s var(--ease), background .32s ease, border-color .32s ease, box-shadow .32s ease;
+}
+
+/* 收缩后：头部变矮，毛玻璃渐显，行为与首页 header-glass 一致 */
+#textEditor.scrolled .screen-header {
+  padding: 8px 16px;
+  background: rgba(var(--panel-rgb), var(--glass-alpha));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border-bottom-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* 包裹层 flex 撑满剩余空间 */
+.rich-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* 标题输入框，平滑过渡大小和边距 */
+.rich-title {
+  width: 100%;
+  padding: 8px 24px;
+  font-size: 26px;
+  font-weight: 600;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-1);
+  font-family: inherit;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: padding .32s var(--ease), font-size .32s var(--ease), letter-spacing .32s var(--ease);
+}
+.rich-title::placeholder{color:var(--text-4);}
+
+/* 收缩时，标题变小、边距减小（节奏对齐首页标题收缩） */
+#textEditor.scrolled .rich-title {
+  padding: 2px 24px 4px;
+  font-size: 18px;
+  letter-spacing: .2px;
+}
+
+/* 正文区 */
+.rich-editor {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 24px 32px;
+  box-sizing: border-box;
+  font-size: 16px;
+  line-height: 1.75;
+  color: var(--text-2);
+  outline: none;
+  background: var(--editor-bg);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 提取公共 Markdown 样式，保证详情页与编辑器一模一样 */
+.detail-markdown {
+  flex:1;overflow-y:auto;padding:8px 24px 100px;box-sizing:border-box;
+  font-size:16px;line-height:1.75;color:var(--text-2);outline:none;
+  background:var(--bg);-webkit-overflow-scrolling:touch;
+}
+
+.rich-editor h1, .detail-markdown h1{font-size:24px;margin:.6em 0 .4em;font-weight:600;color:var(--text-1);}
+.rich-editor h2, .detail-markdown h2{font-size:20px;margin:.6em 0 .4em;font-weight:600;color:var(--text-1);}
+.rich-editor h3, .detail-markdown h3{font-size:17px;margin:.6em 0 .4em;font-weight:600;color:var(--text-1);}
+.rich-editor p, .detail-markdown p{margin:.5em 0;}
+.rich-editor code, .detail-markdown code{background:var(--surface-3);padding:2px 5px;border-radius:4px;font-family:ui-monospace,monospace;font-size:.9em;}
+.rich-editor pre, .detail-markdown pre{background:var(--code-bg);color:var(--code-text);padding:12px;border-radius:8px;overflow-x:auto;font-size:14px;line-height:1.6;}
+.rich-editor pre code, .detail-markdown pre code{background:transparent;color:inherit;padding:0;}
+.rich-editor blockquote, .detail-markdown blockquote{border-left:3px solid var(--accent);padding-left:14px;color:var(--text-3);margin:.6em 0;}
+.rich-editor ul, .rich-editor ol, .detail-markdown ul, .detail-markdown ol{padding-left:22px;margin:.5em 0;}
+.rich-editor li, .detail-markdown li{margin:.2em 0;}
+.rich-editor a, .detail-markdown a{color:var(--accent);text-decoration:underline;}
+.rich-editor img, .detail-markdown img{max-width:100%;border-radius:8px;margin:.5em 0;display:block;}
+.rich-editor hr, .detail-markdown hr{border:none;border-top:1px solid var(--line);margin:1em 0;}
+
+.rich-editor .md-attachment, .detail-markdown .md-attachment{background:var(--surface-2);border-radius:8px;padding:10px;margin:.6em 0;border:1px solid var(--line);}
+.rich-editor .md-attachment audio, .rich-editor .md-attachment video, .detail-markdown .md-attachment audio, .detail-markdown .md-attachment video{width:100%;max-width:100%;border-radius:6px;display:block;}
+.rich-editor .md-attachment .file-name, .detail-markdown .md-attachment .file-name{font-size:14px;color:var(--text-2);display:flex;align-items:center;gap:8px;}
+.rich-editor .md-attachment .file-name svg, .detail-markdown .md-attachment .file-name svg{width:15px;height:15px;flex-shrink:0;color:var(--accent);}
+.rich-editor .md-attachment a, .detail-markdown .md-attachment a{color:var(--accent);text-decoration:none;}
+
+.rich-editor:empty:before{content:attr(data-placeholder);color:var(--text-4);pointer-events:none;display:block;}
+
+/* 底部工具栏，死死固定在底部 */
+.bottom-tools{
+  flex-shrink: 0;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 18px rgba(0,0,0,.08);
+  padding: 6px 10px calc(6px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  z-index: 6;
+  transition: background .35s ease, backdrop-filter .35s ease;
+}
+body.dark .bottom-tools{box-shadow:0 -4px 18px rgba(0,0,0,.4);}
+
+.sel-tools{display:flex;align-items:center;gap:10px;max-height:0;opacity:0;overflow:hidden;margin-bottom:0;padding:0 4px;transition:max-height .32s var(--ease),opacity .25s ease,margin-bottom .32s var(--ease),padding .32s var(--ease);}
+.sel-tools.active{max-height:48px;opacity:1;margin-bottom:8px;padding:4px;}
+.sel-tools .itb-color{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;flex-shrink:0;transition:transform .15s ease;box-sizing:border-box;}
+.sel-tools .itb-color:active{transform:scale(1.15);}
+.sel-tools .itb-sep{width:1px;height:20px;background:var(--line-2);margin:0 2px;flex-shrink:0;}
+.sel-tools .itb-size{flex-shrink:0;border:1px solid var(--line-2);border-radius:var(--r-xs);font-size:12px;font-family:inherit;padding:4px 6px;background:var(--surface);outline:none;color:var(--text-2);cursor:pointer;}
+
+.tool-scroll{display:flex;gap:2px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;}
+.tool-scroll::-webkit-scrollbar{display:none;}
+.tool-scroll button{padding:8px 10px;border:none;background:transparent;font-size:13px;color:var(--text-2);cursor:pointer;border-radius:var(--r-xs);white-space:nowrap;font-family:inherit;transition:background .15s,color .15s;flex-shrink:0;line-height:1;display:flex;align-items:center;justify-content:center;min-width:34px;}
+.tool-scroll button:hover{background:var(--hover);}
+.tool-scroll button:active{background:var(--accent-soft);color:var(--accent-deep);}
+.tool-scroll button svg{width:17px;height:17px;display:block;}
+
+/* 待办复选框 */
+.todo-check{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:2px solid var(--text-4);background:var(--surface);cursor:pointer;vertical-align:-4px;margin-right:8px;position:relative;flex-shrink:0;transition:border-color .3s var(--ease);box-sizing:border-box;}
+.todo-check::before{content:'';position:absolute;inset:1px;border-radius:50%;background:var(--accent);transform:scale(0);transform-origin:center;transition:transform .4s cubic-bezier(.34,1.56,.64,1);}
+.todo-check::after{content:'';position:absolute;left:5px;top:2px;width:5px;height:9px;border-right:2.5px solid #fff;border-bottom:2.5px solid #fff;transform:rotate(45deg) scale(0);transform-origin:center;transition:transform .2s ease;z-index:1;}
+.todo-check[data-checked="true"]{border-color:var(--accent);}
+.todo-check[data-checked="true"]::before{transform:scale(1);transition:transform .35s cubic-bezier(.34,1.56,.64,1) .05s;}
+.todo-check[data-checked="true"]::after{transform:rotate(45deg) scale(1);transition:transform .25s ease .35s;}
+.rich-editor .todo-text.done, .detail-markdown .todo-text.done{text-decoration:line-through;color:var(--text-3);opacity:.7;}
+.rich-editor .todo-line, .detail-markdown .todo-line{display:flex;align-items:center;margin:.25em 0;min-height:1.75em;line-height:1.75;}
+.rich-editor .todo-text, .detail-markdown .todo-text{flex:1;outline:none;min-height:1.4em;word-break:break-word;}
+
+.note-thumb-content .todo-check{pointer-events:auto;transform:scale(1.4);margin-right:12px;}
+.note-thumb-content .todo-line{pointer-events:none;}
+.note-thumb-content .todo-line .todo-text.done{text-decoration:line-through;color:var(--text-3);}
+
+/* 表格 */
+.table-wrap{position:relative;margin:1em 0;padding:24px 0 0 28px;display:inline-block;max-width:100%;}
+.table-wrap table{border-collapse:separate;border-spacing:0;margin:0;font-size:14px;background:var(--surface);border-radius:10px;overflow:hidden;box-shadow:var(--shadow-1);}
+.table-wrap th,.table-wrap td{border:none;border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:8px 12px;text-align:left;min-width:60px;}
+.table-wrap th{background:var(--surface-2);font-weight:600;}
+.table-more-btn{position:absolute;left:0;top:0;width:22px;height:22px;border:1px solid var(--line-2);background:var(--surface);border-radius:6px;cursor:pointer;color:var(--text-3);font-size:14px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;}
+.table-more-btn:hover{background:var(--bg);}
+.table-menu{position:fixed;z-index:4000;background:var(--surface);border-radius:var(--r-sm);box-shadow:var(--shadow-3);padding:6px;min-width:140px;font-size:13px;color:var(--text-1);opacity:0;pointer-events:none;transform:scale(.94);transform-origin:top left;transition:opacity .15s,transform .15s;}
+.table-menu.open{opacity:1;pointer-events:auto;transform:scale(1);}
+.table-menu .tm-item{padding:8px 12px;border-radius:var(--r-xs);cursor:pointer;display:flex;align-items:center;gap:10px;}
+.table-menu .tm-item:hover{background:var(--bg);}
+.table-menu .tm-item svg{width:14px;height:14px;color:var(--text-3);}
+.table-menu .tm-item.danger{color:var(--danger);}
+.table-menu .tm-item.danger svg{color:var(--danger);}
+
+/* 图表深色模式适配 */
+.chart-block{background:var(--surface);border-radius:var(--r-sm);padding:14px;margin:.8em 0;box-shadow:var(--shadow-1);color:var(--text-2);}
+.chart-block svg{display:block;width:100%;height:auto;max-width:100%;}
+
+/* 公式 */
+.formula-block{display:inline-block;padding:10px 16px;background:var(--surface-2);border-radius:var(--r-xs);margin:.6em 0;font-size:18px;color:var(--text-1);line-height:1.5;}
+.formula-block .katex{font-size:1.05em;}
+.formula-block .katex-display{margin:.3em 0;}
+.latex-src{display:inline-block;vertical-align:middle;}
+.latex-src:not(.latex-rendered){font-family:ui-monospace,monospace;font-size:.95em;background:var(--surface-3);padding:1px 5px;border-radius:4px;}

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>笔记</title>
+<link rel="stylesheet" href="lib/katex.min.css">
+<script src="lib/katex.min.js"></script>
+<script src="lib/markdown-it.min.js"></script>
+<script src="lib/texmath.min.js"></script>
+<script src="lib/d3.min.js"></script>
+<script src="lib/jszip.min.js"></script>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/editor-text.css">
+<link rel="stylesheet" href="css/editor-voice.css">
+<link rel="stylesheet" href="css/editor-mind.css">
+<link rel="stylesheet" href="css/editor-book.css">
+<link rel="stylesheet" href="css/dialogs.css">
+</head>
+<body>
+<div class="overlay" id="overlay"></div>
+<div class="header-glass" id="headerGlass"></div>
+
+<button class="toggle-icon" id="toggleIcon" aria-label="切换侧边栏">
+  <span class="icon-inner">
+    <span class="bars"><span class="bar"></span><span class="bar"></span><span class="bar"></span></span>
+    <span class="arrow"></span>
+  </span>
+</button>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <button class="sb-settings" id="sidebarSettings" aria-label="设置">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+  <div class="sidebar-section" id="sidebarTypes"></div>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-section-title">
+    <span>文件夹</span>
+    <button class="edit-btn" id="editFoldersBtn">编辑</button>
+  </div>
+  <div class="sidebar-folders" id="folderList"></div>
+  <button class="new-folder-btn" id="newFolderBtn">+ 新建文件夹</button>
+</aside>
+
+<!-- 搜索遮罩 -->
+<div class="search-mask" id="searchMask"></div>
+
+<button class="search-btn" id="searchBtn" aria-label="搜索">
+  <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="10.5" cy="10.5" r="7"/>
+    <line x1="15.7" y1="15.7" x2="21" y2="21"/>
+  </svg>
+</button>
+<div class="search-pill" id="searchPill">
+  <svg class="pill-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="8.7" cy="8.7" r="5.8"/>
+    <line x1="13" y1="13" x2="17.5" y2="17.5"/>
+  </svg>
+  <input type="text" class="search-input" id="searchInput" placeholder="搜索笔记...">
+</div>
+
+<button class="hamburger" id="hamburger" aria-label="菜单">
+  <span class="line"></span><span class="line"></span><span class="line"></span>
+</button>
+
+<div class="menu-card" id="menuCard">
+  <div class="menu-item" data-menu="view"><span>视图切换</span><span class="chev">›</span></div>
+  <div class="submenu" id="submenuView">
+    <div class="sub-item" data-view="grid">网格视图<span class="check" data-check="grid">✓</span></div>
+    <div class="sub-item" data-view="list">列表视图<span class="check" data-check="list"></span></div>
+    <div class="sub-item" data-view="compact">紧凑视图<span class="check" data-check="compact"></span></div>
+  </div>
+  <div class="divider"></div>
+  <div class="menu-item" data-menu="sort"><span>排序方式</span><span class="chev">›</span></div>
+  <div class="submenu" id="submenuSort">
+    <div class="sub-item" data-sort="updated">按更新时间<span class="check" data-check="updated">✓</span></div>
+    <div class="sub-item" data-sort="created">按创建时间<span class="check" data-check="created"></span></div>
+    <div class="sub-item" data-sort="title">按标题<span class="check" data-check="title"></span></div>
+    <div class="sub-item" data-sort="type">按类型<span class="check" data-check="type"></span></div>
+    <div class="sub-item" data-sort="words">按字数<span class="check" data-check="words"></span></div>
+    <div class="sub-item" data-sort="size">按大小<span class="check" data-check="size"></span></div>
+  </div>
+  <div class="divider"></div>
+  <div class="menu-item" data-menu="settings">设置</div>
+</div>
+
+<div class="select-bar" id="selectBar">
+  <div class="count" id="selectCount">已选 0 项</div>
+  <div class="actions">
+    <button class="share-btn" id="selectShare">分享</button>
+    <button class="delete-btn" id="selectDelete">删除</button>
+    <button class="cancel-btn" id="selectCancel">取消</button>
+  </div>
+</div>
+
+<h1 class="page-title" id="pageTitle">笔记</h1>
+<p class="page-subtitle" id="pageSubtitle"></p>
+
+<div class="notes-grid view-grid" id="notesGrid"></div>
+
+<div class="bottom-bar" id="bottomBar">
+  <button class="corner-btn wave" id="btnVoice" aria-label="语音笔记">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="2" width="6" height="12" rx="3"/>
+      <path d="M5 11a7 7 0 0 0 14 0"/>
+      <line x1="12" y1="18" x2="12" y2="22"/>
+    </svg>
+  </button>
+  <button class="corner-btn mindmap" id="btnMindmap" aria-label="思维导图">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <circle cx="5" cy="5" r="2"/><circle cx="19" cy="5" r="2"/>
+      <circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
+      <line x1="10" y1="10" x2="6.5" y2="6.5"/><line x1="14" y1="10" x2="17.5" y2="6.5"/>
+      <line x1="10" y1="14" x2="6.5" y2="17.5"/><line x1="14" y1="14" x2="17.5" y2="17.5"/>
+    </svg>
+  </button>
+  <button class="top-import-btn" id="btnImport" aria-label="导入笔记">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 8 12 3 17 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+  </button>
+  <button class="bar-btn left" id="btnPen" aria-label="手写笔记">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 20l1-4 11-11 3 3-11 11-4 1z"/><path d="M14.5 6.5l3 3"/>
+    </svg>
+  </button>
+  <button class="bar-btn right" id="btnBook" aria-label="书籍">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+  </button>
+  <button class="add-btn" id="addBtn" aria-label="新建文本笔记">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  </button>
+</div>
+
+<!-- ========== 文本编辑器 ========== -->
+<div class="screen" id="textEditor">
+  <div class="screen-header" id="textHeader">
+    <button class="screen-back" data-close="text">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <button class="editor-folder-pill" data-editor="text">
+      <span class="ef-dot"></span><span class="ef-name">未分类</span>
+    </button>
+    <button class="screen-done" id="textDone">完成</button>
+  </div>
+  <div class="rich-wrap" id="richWrap">
+    <input class="rich-title" id="textTitle" type="text" placeholder="标题" maxlength="80">
+    <div class="rich-editor" id="richEditor" contenteditable="true" data-placeholder="开始写笔记..."></div>
+  </div>
+  <div class="bottom-tools" id="textTools">
+    <div class="sel-tools" id="selTools">
+      <div class="itb-color" data-color="#1a1a1a" style="background:#1a1a1a" title="黑"></div>
+      <div class="itb-color" data-color="#e74c3c" style="background:#e74c3c" title="红"></div>
+      <div class="itb-color" data-color="#f39c12" style="background:#f39c12" title="橙"></div>
+      <div class="itb-color" data-color="#27ae60" style="background:#27ae60" title="绿"></div>
+      <div class="itb-color" data-color="#3498db" style="background:#3498db" title="蓝"></div>
+      <div class="itb-color" data-color="#9b59b6" style="background:#9b59b6" title="紫"></div>
+      <div class="itb-sep"></div>
+      <select class="itb-size" id="itbSize">
+        <option value="">字号</option>
+        <option value="12">12</option><option value="14">14</option><option value="16">16</option>
+        <option value="18">18</option><option value="20">20</option><option value="24">24</option>
+        <option value="28">28</option><option value="32">32</option>
+      </select>
+    </div>
+    <div class="tool-scroll" id="toolScroll">
+      <button data-rich="h1">H1</button><button data-rich="h2">H2</button><button data-rich="h3">H3</button>
+      <button data-rich="bold"><b>B</b></button><button data-rich="italic"><i>I</i></button><button data-rich="strike"><s>S</s></button>
+      <button data-rich="underline"><u>U</u></button>
+      <button data-rich="code">{ }</button>
+      <button data-rich="codeblock" title="代码块">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </button>
+      <button data-rich="quote">“”</button>
+      <button data-rich="ul">•</button><button data-rich="ol">1.</button>
+      <button data-rich="indent" title="首行缩进">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h18M3 16h12M21 12H15M18 9l3 3-3 3"/></svg>
+      </button>
+      <button data-rich="todo" title="待办">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><polyline points="8 12 11 15 16 9"/></svg>
+      </button>
+      <button data-rich="link" title="超链接">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19"/></svg>
+      </button>
+      <button data-rich="hr" title="分割线">—</button>
+      <button data-rich="table" title="表格">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+      </button>
+      <button data-rich="chart" title="图表">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="20" x2="21" y2="20"/><rect x="6" y="11" width="3" height="6"/><rect x="11" y="7" width="3" height="10"/><rect x="16" y="13" width="3" height="4"/></svg>
+      </button>
+      <button data-rich="formula" title="公式">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h11l-7 8 7 8H5"/><line x1="18" y1="6" x2="22" y2="6"/></svg>
+      </button>
+      <button data-rich="attach" title="附件">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 手写编辑器 ========== -->
+<div class="screen" id="drawEditor">
+  <div class="screen-header">
+    <button class="screen-back" data-close="draw"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="editor-folder-pill" data-editor="draw">
+      <span class="ef-dot"></span><span class="ef-name">未分类</span>
+    </button>
+    <button class="screen-done" id="drawDone">完成</button>
+  </div>
+  <div class="draw-tools" id="drawTools">
+    <div class="color-dot active" data-color="#1a1a1a" style="background:#1a1a1a"></div>
+    <div class="color-dot" data-color="#f5c542" style="background:#f5c542"></div>
+    <div class="color-dot" data-color="#e74c3c" style="background:#e74c3c"></div>
+    <div class="color-dot" data-color="#3498db" style="background:#3498db"></div>
+    <div class="color-dot" data-color="#2ecc71" style="background:#2ecc71"></div>
+    <div style="width:1px;height:20px;background:var(--line-2)"></div>
+    <div class="size-dot active" data-size="3" style="width:8px;height:8px"></div>
+    <div class="size-dot" data-size="6" style="width:14px;height:14px"></div>
+    <div class="size-dot" data-size="12" style="width:22px;height:22px"></div>
+    <button class="clear-btn" id="clearCanvas">清空</button>
+  </div>
+  <div class="canvas-wrap"><canvas id="drawCanvas"></canvas></div>
+</div>
+
+<!-- ========== 思维导图编辑器 ========== -->
+<div class="screen" id="mindEditor">
+  <div class="screen-header">
+    <button class="screen-back" data-close="mind"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="editor-folder-pill" data-editor="mind">
+      <span class="ef-dot"></span><span class="ef-name">未分类</span>
+    </button>
+    <button class="screen-done" id="mindDone">完成</button>
+  </div>
+  <div class="mind-toolbar">
+    <button id="mindAddChild">+ 添加子节点</button>
+    <button id="mindDeleteNode">删除节点</button>
+  </div>
+  <div class="mind-canvas" id="mindCanvas">
+    <div class="mind-inner" id="mindInner"><svg class="mind-lines" id="mindLines"></svg></div>
+    <div class="mind-hint">拖动节点 • 点击选中 • 双击修改文字</div>
+  </div>
+</div>
+
+<!-- ========== 语音编辑器 ========== -->
+<div class="screen" id="voiceEditor">
+  <div class="screen-header">
+    <button class="screen-back" data-close="voice"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="editor-folder-pill" data-editor="voice">
+      <span class="ef-dot"></span><span class="ef-name">未分类</span>
+    </button>
+    <button class="screen-done" id="voiceDone" disabled>保存</button>
+  </div>
+  <div class="voice-body">
+    <div class="voice-wave" id="voiceWave">
+      <div class="wbar" style="height:20px"></div><div class="wbar" style="height:32px"></div>
+      <div class="wbar" style="height:48px"></div><div class="wbar" style="height:64px"></div>
+      <div class="wbar" style="height:78px"></div><div class="wbar" style="height:64px"></div>
+      <div class="wbar" style="height:48px"></div><div class="wbar" style="height:32px"></div>
+      <div class="wbar" style="height:20px"></div>
+    </div>
+    <div class="voice-time" id="voiceTime">00:00</div>
+    <div class="voice-status" id="voiceStatus">点击下方按钮开始录音</div>
+    <button class="voice-btn record" id="voiceBtn">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="7" y="3" width="10" height="14" rx="5"/>
+        <path d="M5 11a7 7 0 0 0 14 0"/>
+        <line x1="12" y1="18" x2="12" y2="21"/>
+      </svg>
+    </button>
+    <div class="voice-play" id="voicePlay" style="display:none">
+      <button id="voicePlayBtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+      <div class="play-bar" id="voicePlayBar"><div class="play-progress" id="voiceProgress"></div></div>
+      <div class="play-time" id="voicePlayTime">00:00 / 00:00</div>
+    </div>
+    <div class="voice-hint">录音会保存为笔记，可在笔记详情中播放</div>
+  </div>
+</div>
+
+<!-- ========== 书籍编辑器 ========== -->
+<div class="screen" id="bookEditor">
+  <div class="screen-header">
+    <button class="screen-back" data-close="book"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="editor-folder-pill" data-editor="book">
+      <span class="ef-dot"></span><span class="ef-name">未分类</span>
+    </button>
+    <button class="screen-done" id="bookDone">完成</button>
+  </div>
+  <div class="book-body">
+    <div class="book-cover" id="bookCover" title="点击上传封面">
+      <span class="placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+      </span>
+    </div>
+    <div class="book-field"><label>书名</label><input type="text" id="bookName" placeholder="给这本书起个名字" maxlength="60"></div>
+    <div class="book-field"><label>简介</label><textarea id="bookIntro" placeholder="写一段简介..."></textarea></div>
+    <div class="book-section-header"><h3>分卷</h3><button class="book-add-btn" id="addVolumeBtn">+ 添加分卷</button></div>
+    <div id="volumeList"></div>
+  </div>
+</div>
+
+<!-- ========== 章节编辑 ========== -->
+<div class="screen" id="chapterEditor">
+  <div class="screen-header">
+    <button class="screen-back" id="chapterBack"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="screen-done" id="chapterDone">保存章节</button>
+  </div>
+  <div class="chapter-content">
+    <input type="text" id="chapterTitle" placeholder="章节标题" maxlength="80"
+      style="width:100%;padding:8px 0;font-size:22px;font-weight:600;border:none;outline:none;background:transparent;color:var(--text-1);font-family:inherit;box-sizing:border-box;margin-bottom:8px;">
+    <textarea id="chapterBody" placeholder="章节内容..."
+      style="width:100%;min-height:60vh;border:none;outline:none;background:transparent;font-size:16px;line-height:1.75;color:var(--text-2);font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+  </div>
+</div>
+
+<!-- ========== 笔记详情 ========== -->
+<div class="screen" id="noteDetail">
+  <div class="screen-header">
+    <button class="screen-back" id="detailBack"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button class="editor-folder-pill" data-editor="detail">
+      <span class="ef-dot"></span><span class="ef-name">未分类</span>
+    </button>
+    <button class="screen-back" id="detailMoreBtn" aria-label="更多">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+      </svg>
+    </button>
+    <button class="screen-done" id="detailDelete" style="display:none;">删除</button>
+  </div>
+  <div class="detail-body" id="detailClickArea">
+    <h2 class="detail-title" id="detailTitle"></h2>
+    <div class="detail-date" id="detailDate"></div>
+    <div id="detailContentWrap"></div>
+  </div>
+  <div class="detail-actions">
+    <button class="detail-share" id="detailShare">分享</button>
+    <button class="detail-edit" id="detailEdit">编辑</button>
+  </div>
+</div>
+
+<!-- 详情页三点菜单 -->
+<div class="menu-card" id="detailMenu" style="top:70px;right:20px;width:180px;z-index:4000;">
+  <div class="menu-item" id="dMenuPin"><span>收藏</span></div>
+  <div class="menu-item" id="dMenuLock"><span>添加笔记锁</span></div>
+  <div class="menu-item" id="dMenuBg"><span>笔记背景</span></div>
+  <div class="menu-item" id="dMenuCard"><span>添加为桌面卡片</span></div>
+  <div class="menu-item" id="dMenuHistory"><span>历史版本</span></div>
+  <div class="menu-item" id="dMenuPrint"><span>打印</span></div>
+  <div class="divider"></div>
+  <div class="menu-item" id="dMenuDelete" style="color:var(--danger)"><span>删除</span></div>
+</div>
+
+<!-- 历史版本面板 -->
+<div class="screen" id="historyScreen" style="z-index:4000;">
+  <div class="screen-header">
+    <button class="screen-back" id="historyBack"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="screen-title" style="flex:1;font-size:17px;font-weight:600;color:var(--text-1);padding:0 10px;">历史版本</div>
+    <button class="screen-done" id="historyClearAll" style="color:var(--danger);">清空</button>
+  </div>
+  <div class="detail-body" id="historyList" style="padding:10px 24px 40px;">
+    <!-- 由 JS 渲染 -->
+  </div>
+</div>
+
+<!-- ========== 设置 ========== -->
+<div class="screen" id="settingsScreen">
+  <div class="screen-header">
+    <button class="screen-back" id="settingsBack"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div style="font-size:17px;font-weight:600;color:var(--text-1);">设置</div>
+    <div style="width:40px;"></div>
+  </div>
+  <div class="settings-body">
+    <div class="settings-section">
+      <div class="settings-section-title">外观</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div class="settings-row-text">
+            <div class="settings-row-title">深色模式</div>
+            <div class="settings-row-desc">切换深色 / 浅色界面</div>
+          </div>
+          <label class="switch">
+            <input id="darkModeToggle" type="checkbox">
+            <span class="slider">
+              <div class="star star_1"></div><div class="star star_2"></div><div class="star star_3"></div>
+              <svg viewBox="0 0 16 16" class="cloud_1 cloud">
+                <path transform="matrix(.77976 0 0 .78395-299.99-418.63)" fill="#fff"
+                  d="m391.84 540.91c-.421-.329-.949-.524-1.523-.524-1.351 0-2.451 1.084-2.485 2.435-1.395.526-2.388 1.88-2.388 3.466 0 1.874 1.385 3.423 3.182 3.667v.034h12.73v-.006c1.775-.104 3.182-1.584 3.182-3.395 0-1.747-1.309-3.186-2.994-3.379.007-.106.011-.214.011-.322 0-2.707-2.271-4.901-5.072-4.901-2.073 0-3.856 1.202-4.643 2.925"></path>
+              </svg>
+            </span>
+          </label>
+        </div>
+        <div class="settings-row column">
+          <div class="settings-row-text">
+            <div class="settings-row-title">毛玻璃强度</div>
+            <div class="settings-row-desc" id="glassLevelLabel">75%</div>
+          </div>
+          <div class="glass-slider-row">
+            <svg class="gs-icon" id="gsSolid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="4" width="16" height="16" rx="4" fill="currentColor" stroke="none"/>
+            </svg>
+            <input type="range" class="glass-range" id="glassSlider" min="0" max="100" value="75">
+            <svg class="gs-icon" id="gsGlass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="4" width="16" height="16" rx="4" opacity="0.32"/>
+              <line x1="4" y1="10" x2="20" y2="10" opacity="0.55"/>
+              <line x1="4" y1="14" x2="20" y2="14" opacity="0.35"/>
+              <line x1="10" y1="4" x2="10" y2="20" opacity="0.55"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">数据与备份</div>
+      <div class="settings-card">
+        <div class="settings-row">
+          <div class="settings-row-text">
+            <div class="settings-row-title">保存历史版本</div>
+            <div class="settings-row-desc">每次保存笔记时生成一个快照</div>
+          </div>
+          <label class="switch-green">
+            <input id="historyEnableToggle" type="checkbox" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="settings-row column" id="historyLimitRow">
+          <div class="settings-row-text">
+            <div class="settings-row-title">保留策略</div>
+            <div class="settings-row-desc">超出限制的旧版本会被自动清理</div>
+          </div>
+          <div class="history-radio-group">
+            <label class="history-radio-label">
+              <input type="radio" name="historyPolicy" value="count" checked> 按数量保留
+            </label>
+            <label class="history-radio-label">
+              <input type="radio" name="historyPolicy" value="time"> 按时间保留
+            </label>
+          </div>
+        </div>
+        <div class="settings-row" id="historyLimitValueRow">
+          <div class="settings-row-text">
+            <div class="settings-row-title" id="historyLimitLabel">保留最近 20 个版本</div>
+          </div>
+          <select id="historyLimitValue" class="settings-select">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20" selected>20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="1">1 (天)</option>
+            <option value="3">3 (天)</option>
+            <option value="7">7 (天)</option>
+            <option value="30">30 (天)</option>
+          </select>
+        </div>
+        <div class="settings-row column">
+          <div class="settings-row-text">
+            <div class="settings-row-title">备份与恢复</div>
+            <div class="settings-row-desc">将全部笔记导出为 .notebak 备份包，或从备份包恢复</div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:8px;">
+            <button id="exportBackupBtn" style="flex:1;padding:10px 14px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">导出备份</button>
+            <button id="importBackupBtn" style="flex:1;padding:10px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);color:var(--text-1);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">导入备份</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Iframe 预览弹窗 ========== -->
+<div class="screen" id="iframeScreen" style="z-index:4000;">
+  <div class="screen-header" style="background:var(--surface);border-bottom:1px solid var(--line);">
+    <button class="screen-back" id="iframeBack"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <div class="screen-title" id="iframeTitle" style="flex:1;font-size:14px;font-weight:600;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 10px;"></div>
+    <button class="screen-done" id="iframeOpenExternal" style="color:var(--accent);font-size:13px;">在浏览器打开</button>
+  </div>
+  <iframe id="iframeView" style="flex:1;border:none;width:100%;background:#fff;" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+</div>
+
+<div class="attach-mask" id="attachMask"></div>
+<div class="attach-panel" id="attachPanel">
+  <h3>插入附件</h3>
+  <div class="attach-grid">
+    <div class="attach-item" data-attach="image"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="label">图片</div></div>
+    <div class="attach-item" data-attach="audio"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="label">音频</div></div>
+    <div class="attach-item" data-attach="video"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div><div class="label">视频</div></div>
+    <div class="attach-item" data-attach="file"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="label">文件</div></div>
+  </div>
+</div>
+
+<div class="folder-dialog-mask" id="folderDialogMask"></div>
+<div class="folder-dialog" id="folderDialog">
+  <h3>新建文件夹</h3>
+  <div class="folder-color-row" id="folderColorRow"></div>
+  <div class="folder-name-row">
+    <div class="folder-name-bar" id="folderNameBar"></div>
+    <input type="text" class="folder-name-input" id="folderNameInput" placeholder="文件夹名称" maxlength="20">
+  </div>
+  <div class="folder-dialog-actions">
+    <button class="fd-cancel" id="folderCancel">取消</button>
+    <button class="fd-save" id="folderSave">保存</button>
+  </div>
+</div>
+
+<div class="password-dialog-mask" id="passwordDialogMask"></div>
+<div class="password-dialog" id="passwordDialog">
+  <h3 id="passwordDialogTitle">设置密码</h3>
+  <input type="password" id="passwordInput1" placeholder="输入密码" maxlength="20">
+  <input type="password" id="passwordInput2" placeholder="确认密码" maxlength="20">
+  <div class="pd-hint" id="passwordHint"></div>
+  <div class="password-dialog-actions">
+    <button class="pd-cancel" id="passwordCancel">取消</button>
+    <button class="pd-save" id="passwordSave">确定</button>
+  </div>
+</div>
+
+<!-- 自定义链接对话框 -->
+<div class="link-dialog-mask" id="linkDialogMask"></div>
+<div class="link-dialog" id="linkDialog">
+  <h3>插入超链接</h3>
+  <input type="text" id="linkText" placeholder="显示文字（如：百度）" maxlength="50">
+  <input type="text" id="linkUrl" placeholder="链接地址（如：https://baidu.com）" maxlength="200">
+  <div class="password-dialog-actions">
+    <button class="pd-cancel" id="linkCancel">取消</button>
+    <button class="pd-save ready" id="linkSave">确定</button>
+  </div>
+</div>
+
+<div class="folder-picker-mask" id="folderPickerMask"></div>
+<div class="folder-picker" id="folderPicker">
+  <h3>选择文件夹</h3>
+  <div class="folder-picker-list" id="folderPickerList"></div>
+  <div class="password-dialog-actions">
+    <button class="pd-cancel" id="folderPickerCancel">取消</button>
+    <button class="pd-save ready" id="folderPickerSave">确定</button>
+  </div>
+</div>
+
+<div class="picker-mask" id="chartDialogMask"></div>
+<div class="picker-dialog" id="chartDialog">
+  <h3>插入图表</h3>
+  <div class="picker-grid" id="chartTypeGrid">
+    <div class="picker-item active" data-chart="bar">柱状图</div>
+    <div class="picker-item" data-chart="hbar">条形图</div>
+    <div class="picker-item" data-chart="line">折线图</div>
+    <div class="picker-item" data-chart="area">面积图</div>
+    <div class="picker-item" data-chart="step">阶梯图</div>
+    <div class="picker-item" data-chart="scatter">散点图</div>
+    <div class="picker-item" data-chart="pie">饼图</div>
+    <div class="picker-item" data-chart="donut">环形图</div>
+    <div class="picker-item" data-chart="rose">玫瑰图</div>
+    <div class="picker-item" data-chart="radar">雷达图</div>
+  </div>
+  <input type="text" class="picker-input" id="chartTitle" placeholder="图表标题（可选）">
+  <textarea class="picker-input" id="chartData" rows="4" placeholder="每行一组：标签,数值&#10;例如：&#10;一月,30&#10;二月,55&#10;三月,42"></textarea>
+  
+  <div style="display:flex;gap:12px;margin:10px 0;font-size:13px;color:var(--text-2);">
+    <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="chartShowGrid" checked style="accent-color:var(--accent);"> 显示网格</label>
+    <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="chartShowValue" checked style="accent-color:var(--accent);"> 显示数值</label>
+  </div>
+  <div class="chart-themes" id="chartColorThemes" style="display:flex;gap:8px;margin-bottom:12px;">
+    <div class="chart-theme active" data-theme="default" style="display:flex;gap:2px;padding:4px;border-radius:6px;border:1px solid var(--accent);cursor:pointer;">
+      <span style="background:#f5c542;width:12px;height:12px;border-radius:2px;"></span>
+      <span style="background:#7bb8e8;width:12px;height:12px;border-radius:2px;"></span>
+      <span style="background:#8fc9a8;width:12px;height:12px;border-radius:2px;"></span>
+    </div>
+    <div class="chart-theme" data-theme="cool" style="display:flex;gap:2px;padding:4px;border-radius:6px;border:1px solid var(--line-2);cursor:pointer;">
+      <span style="background:#8b5cf6;width:12px;height:12px;border-radius:2px;"></span>
+      <span style="background:#3b82f6;width:12px;height:12px;border-radius:2px;"></span>
+      <span style="background:#06b6d4;width:12px;height:12px;border-radius:2px;"></span>
+    </div>
+    <div class="chart-theme" data-theme="warm" style="display:flex;gap:2px;padding:4px;border-radius:6px;border:1px solid var(--line-2);cursor:pointer;">
+      <span style="background:#ef4444;width:12px;height:12px;border-radius:2px;"></span>
+      <span style="background:#f97316;width:12px;height:12px;border-radius:2px;"></span>
+      <span style="background:#eab308;width:12px;height:12px;border-radius:2px;"></span>
+    </div>
+  </div>
+
+  <div class="picker-hint">每行一组「标签,数值」，用英文逗号分隔，至少两行</div>
+  <div class="password-dialog-actions"><button class="pd-cancel" id="chartCancel">取消</button><button class="pd-save ready" id="chartSave">插入</button></div>
+</div>
+
+<div class="picker-mask" id="formulaDialogMask"></div>
+<div class="picker-dialog" id="formulaDialog">
+  <h3>插入公式</h3>
+  <div class="picker-grid" id="formulaTypeGrid" style="grid-template-columns:repeat(2,1fr)">
+    <div class="picker-item active" data-formula="inline">行内 $...$</div>
+    <div class="picker-item" data-formula="display">独立 $$...$$</div>
+    <div class="picker-item" data-formula="frac">分数</div>
+    <div class="picker-item" data-formula="sqrt">根号</div>
+    <div class="picker-item" data-formula="sum">求和</div>
+    <div class="picker-item" data-formula="int">积分</div>
+  </div>
+  <input type="text" class="picker-input" id="formulaInput" placeholder="例如：E = mc^2" autocomplete="off">
+  <div class="picker-hint" id="formulaHint">使用标准 LaTeX 语法，例如 <b>\frac{a}{b}</b>、<b>\sqrt{x}</b>、<b>\int_0^1</b></div>
+  <div class="password-dialog-actions"><button class="pd-cancel" id="formulaCancel">取消</button><button class="pd-save ready" id="formulaSave">插入</button></div>
+</div>
+
+<div class="table-menu" id="tableMenu">
+  <div class="tm-item" data-table-act="addRow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>添加行</div>
+  <div class="tm-item" data-table-act="delRow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>删除行</div>
+  <div class="tm-item" data-table-act="addCol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>添加列</div>
+  <div class="tm-item" data-table-act="delCol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>删除列</div>
+  <div class="tm-item danger" data-table-act="delTable"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>删除表格</div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="js/db.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/state.js"></script>
+<script src="js/editor-text-tables.js"></script>
+<script src="js/editor-text-dialogs.js"></script>
+<script src="js/editor-text.js"></script>
+<script src="js/editor-draw.js"></script>
+<script src="js/editor-voice.js"></script>
+<script src="js/editor-mind.js"></script>
+<script src="js/editor-book.js"></script>
+<script src="js/detail.js"></script>
+<script src="js/main.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
